@@ -40,9 +40,11 @@ return {
 
                 hi.TelescopePromptBorder = { fg = c.green, bg = c.bg_float }
                 hi.TelescopePromptTitle = { fg = c.green, bg = c.bg_float }
+
+                hi.SpecialKey = { fg = c.comment }
             end,
         })
 
-        vim.cmd([[colorscheme tokyonight-night]])
+        -- vim.cmd.colorscheme('tokyonight-night')
     end,
 }
