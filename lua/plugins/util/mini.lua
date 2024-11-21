@@ -9,7 +9,7 @@ return {
         -- require('mini.diff').setup()
         -- require('mini.hipatterns').setup()
         require('mini.icons').setup({
-            style = ascii,
+            style = 'ascii',
         })
         require('mini.move').setup({
             mappings = {
