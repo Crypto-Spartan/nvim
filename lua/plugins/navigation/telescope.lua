@@ -502,6 +502,9 @@ return {
                         ['<Up>'] = actions.preview_scrolling_up,
                         ['<Down>'] = actions.preview_scrolling_down,
                     },
+                    n = {
+                        ['q'] = actions.close,
+                    },
                 },
                 layout_config = {
                     cursor = { width = 0.9 },
