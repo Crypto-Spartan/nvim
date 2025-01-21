@@ -63,7 +63,7 @@ return {
                 '<leader>b',
                 group = 'Buffers',
                 expand = function()
-                    require('which-key.extras').expand.buf()
+                    return require('which-key.extras').expand.buf()
                 end,
             },
             { '<leader>t', group = 'Toggle' },
