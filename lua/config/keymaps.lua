@@ -50,6 +50,7 @@ nnoremap('<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 -- paste/delete without putting removed text into register
 -- xnoremap('<leader>p', [["_dP]], { desc = 'Paste - no cut to clipboard' })
 -- xnoremap('<leader>P', [["_dp]], { desc = 'Paste (end of line) - no cut to clipboard' })
+vim.keymap.set({'n','v','x'}, '<leader>c', [["_c]], { desc = 'Change - no cut to clipboard' })
 vim.keymap.set({'n','v','x'}, '<leader>d', [["_d]], { desc = 'Delete - no cut to clipboard' })
 
 -- newlines without entering insert mode
