@@ -203,11 +203,6 @@ return {
 
             -- buffers
             {
-                '<leader>,',
-                ts_buffers_cmd,
-                desc = 'Open Buffers'
-            },
-            {
                 '<leader>bb',
                 ts_buffers_cmd,
                 desc = 'Open Buffers'
