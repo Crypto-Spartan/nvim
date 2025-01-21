@@ -86,11 +86,7 @@ return {
         },
     },
     init = function()
-        -- create autocommand group for snacks.toggle autocommands
-        local snacks_augroup = vim.api.nvim_create_augroup('SnacksToggle', { clear = true })
-
         vim.api.nvim_create_autocmd('User', {
-            group = snacks_augroup,
             pattern = 'VeryLazy',
             once = true,
             callback = function()
@@ -118,7 +114,6 @@ return {
 
         -- snacks config on file open
         vim.api.nvim_create_autocmd('User', {
-            group = snacks_augroup,
             pattern = 'LazyFileOpen',
             once = true,
             callback = function()

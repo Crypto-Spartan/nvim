@@ -8,7 +8,6 @@ return {
 
         -- snacks toggle setup
         vim.api.nvim_create_autocmd('User', {
-            group = vim.api.nvim_create_augroup('SnacksToggle', { clear = false }),
             pattern = 'LazyFileOpen',
             once = true,
             callback = function()
@@ -18,14 +17,9 @@ return {
                     get = function()
                         return undotree_snacks_enabled
                     end,
-                    set = function(state)
-                        if state then
-                            undotree_snacks_enabled = true
-                            vim.cmd('UndotreeToggle')
-                        else
-                            undotree_snacks_enabled = false
-                            vim.cmd('UndotreeToggle')
-                        end
+                    set = function()
+                        undotree_snacks_enabled = not undotree_snacks_enabled
+                        vim.cmd('UndotreeToggle')
                     end,
                 }
                 package.loaded.snacks.toggle.new(toggle_opts):map('<leader>tu')
