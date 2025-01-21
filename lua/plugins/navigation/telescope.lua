@@ -493,14 +493,14 @@ return {
             defaults = {
                 mappings = {
                     i = {
-                        ['<C-c>'] = { '<esc>', type = 'command' },
-                        ['<C-k>'] = actions.move_selection_previous,
-                        ['<C-j>'] = actions.move_selection_next,
-                        ['<C-q>'] = actions.send_selected_to_qflist + actions.open_qflist,
-                        ['<Left>'] = actions.preview_scrolling_left,
+                        ['<C-c>']   = { '<esc>', type = 'command' },
+                        ['<C-k>']   = actions.move_selection_previous,
+                        ['<C-j>']   = actions.move_selection_next,
+                        ['<C-q>']   = actions.send_selected_to_qflist + actions.open_qflist,
+                        ['<Left>']  = actions.preview_scrolling_left,
                         ['<Right>'] = actions.preview_scrolling_right,
-                        ['<Up>'] = actions.preview_scrolling_up,
-                        ['<Down>'] = actions.preview_scrolling_down,
+                        ['<Up>']    = actions.preview_scrolling_up,
+                        ['<Down>']  = actions.preview_scrolling_down,
                     },
                     n = {
                         ['q'] = actions.close,
