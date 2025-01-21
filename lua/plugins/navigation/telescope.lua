@@ -5,6 +5,7 @@ return {
     dependencies = {
         'nvim-lua/plenary.nvim',
         'nvim-telescope/telescope-fzf-native.nvim',
+        'benfowler/telescope-luasnip.nvim',
     },
     keys = function()
         local function ts_actions()
@@ -298,6 +299,13 @@ return {
                 desc = 'Highlight Groups'
             },
             {
+                '<leader>fi',
+                function()
+                    vim.cmd('Telescope luasnip')
+                end,
+                desc = 'Snippets'
+            },
+            {
                 '<leader>fj',
                 function()
                     ts_builtin().jumplist({ initial_mode = 'normal' })
@@ -517,10 +525,11 @@ return {
                     enable_preview = true,
                 },
             },
-            extensions = { 'fzf' },
+            extensions = { 'fzf', 'luasnip' },
         })
 
         telescope.load_extension('fzf')
+        telescope.load_extension('luasnip')
     end
 }
 

@@ -11,6 +11,7 @@ return {
     end)(),
     dependencies = {
         'rafamadriz/friendly-snippets',
+        'benfowler/telescope-luasnip.nvim',
     },
     lazy = true,
 }
