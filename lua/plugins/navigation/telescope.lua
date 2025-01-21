@@ -25,12 +25,7 @@ return {
         -- end
 
         local function current_buffer_fuzzy_find()
-            return ts_builtin().current_buffer_fuzzy_find(
-                require('telescope.themes').get_dropdown({
-                    winblend = 10,
-                    previewer = false,
-                })
-            )
+            return ts_builtin().current_buffer_fuzzy_find()
         end
 
         local function ts_buffers_cmd()
