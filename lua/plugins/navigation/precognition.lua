@@ -13,7 +13,7 @@ return {
                 local toggle_opts = {
                     name = 'Precognition (Motions)',
                     get = function()
-                        return p_pkg.is_visibile
+                        return p_pkg.is_visible
                     end,
                     set = function(state)
                         if state then
