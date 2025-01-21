@@ -4,20 +4,7 @@ return {
     cmd = 'Telescope',
     dependencies = {
         'nvim-lua/plenary.nvim',
-        {
-            -- if encountering errors, see telescope-fzf-native README for installation instructions
-            'nvim-telescope/telescope-fzf-native.nvim',
-
-            -- `build` is used to run some command when the plugin is installed/updated
-            -- this is only run then, not ever time neovim starts up
-            build = 'make',
-            -- build = 'cmake -S. -Bbuild -DCMAKE_BUILD_TYPE=Release && cmake --build build --config Release',
-
-            -- `cond` is a condition used to determine whether this plugin should be installed & loaded
-            cond = function()
-                return vim.fn.executable 'make' == 1
-            end,
-        }
+        'nvim-telescope/telescope-fzf-native.nvim',
     },
     keys = function()
         local function ts_actions()
@@ -30,12 +17,12 @@ return {
             return require('telescope.utils')
         end
 
-        local function get_nvim_root_dir()
-            return vim.fn.getcwd()
-        end
-        local function get_cwd()
-            return ts_utils().buffer_dir()
-        end
+        -- local function get_nvim_root_dir()
+        --     return vim.fn.getcwd()
+        -- end
+        -- local function get_cwd()
+        --     return ts_utils().buffer_dir()
+        -- end
 
         local function current_buffer_fuzzy_find()
             return ts_builtin().current_buffer_fuzzy_find(
@@ -47,43 +34,192 @@ return {
         end
 
         local function ts_buffers_cmd()
-            vim.cmd('Telescope buffers sort_mru=true sort_lastused=true initial_mode=normal')
+            ts_builtin().buffers({ sort_mru = true, sort_lastused = true, initial_mode = 'normal' })
+        end
+
+        local function ts_resume_cmd()
+            ts_builtin().resume({ initial_mode = 'normal' })
+        end
+
+        local plugins_dir = vim.fs.joinpath(vim.fn.stdpath('data'), 'lazy')
+        local nvim_config_dir = vim.fn.stdpath('config')
+
+        local function has_rg_program(picker_name, program)
+            if vim.fn.executable(program) == 1 then
+                return true
+            end
+
+            ts_utils().notify(picker_name, {
+                msg = string.format(
+                "'ripgrep', or similar alternative, is a required dependency for the %s picker. "
+                .. "Visit https://github.com/BurntSushi/ripgrep for installation instructions.",
+                picker_name
+                ),
+                level = 'ERROR',
+            })
+            return false
+        end
+
+        local function get_help_files()
+            local help_files = {}
+            local rtp = vim.o.runtimepath
+
+            -- extend the runtime path with all plugins not loaded by lazy.nvim
+            local lazy = package.loaded['lazy.core.util']
+            if lazy and lazy.get_unloaded_rtp then
+                local paths = lazy.get_unloaded_rtp('')
+                if #paths > 0 then
+                    rtp = rtp .. ',' .. table.concat(paths, ',')
+                end
+            end
+            local all_files = vim.fn.globpath(rtp, 'doc/*', 1, 1)
+            for _, fullpath in ipairs(all_files) do
+                local file = ts_utils().path_tail(fullpath)
+                if file ~= 'tags' and not file:match('^tags%-..$') then
+                    table.insert(help_files, fullpath)
+                end
+            end
+
+            return help_files
+        end
+
+        local function opts_contain_invert(args)
+            local invert = false
+            local files_with_matches = false
+
+            for _, v in ipairs(args) do
+                if v == '--invert-match' then
+                    invert = true
+                elseif v == '--files-with-matches' or v == '--files-without-match' then
+                    files_with_matches = true
+                end
+
+                if #v >= 2 and v:sub(1, 1) == '-' and v:sub(2, 2) ~= '-' then
+                    local non_option = false
+                    for i = 2, #v do
+                        local vi = v:sub(i, i)
+                        if vi == '=' then -- ignore option -g=xxx
+                            break
+                        elseif vi == 'g' or vi == 'f' or vi == 'm' or vi == 'e' or vi == 'r' or vi == 't' or vi == 'T' then
+                            non_option = true
+                        elseif non_option == false and vi == 'v' then
+                            invert = true
+                        elseif non_option == false and vi == 'l' then
+                            files_with_matches = true
+                        end
+                    end
+                end
+            end
+            return invert, files_with_matches
+        end
+
+        local function grep_help(opts)
+            if opts == nil then
+                opts = {}
+            end
+
+            local conf = require('telescope.config').values
+            local vimgrep_arguments = opts.vimgrep_arguments or conf.vimgrep_arguments
+            if not has_rg_program('live_grep', vimgrep_arguments[1]) then
+                return
+            end
+
+            local additional_args = {}
+            if opts.additional_args ~= nil then
+                if type(opts.additional_args) == 'function' then
+                    additional_args = opts.additional_args(opts)
+                elseif type(opts.additional_args) == 'table' then
+                    additional_args = opts.additional_args
+                end
+            end
+
+            if opts.type_filter then
+                additional_args[#additional_args + 1] = '--type=' .. opts.type_filter
+            end
+
+            if opts.glob_pattern ~= nil then
+                if type(opts.glob_pattern) == 'string' then
+                    additional_args[#additional_args + 1] = '--glob=' .. opts.glob_pattern
+                elseif type(opts.glob_pattern) == 'table' then
+                    for i = 1, #opts.glob_pattern do
+                        additional_args[#additional_args + 1] = '--glob=' .. opts.glob_pattern[i]
+                    end
+                end
+            end
+
+            if opts.file_encoding then
+                additional_args[#additional_args + 1] = '--encoding=' .. opts.file_encoding
+            end
+
+            local flatten = ts_utils().flatten
+            local args = flatten({ vimgrep_arguments, additional_args })
+            opts.__inverted, opts.__matches = opts_contain_invert(args)
+
+            local finders = require('telescope.finders')
+            local make_entry = require('telescope.make_entry')
+            local search_list = get_help_files()
+
+            local live_grepper = finders.new_job(function(prompt)
+                if not prompt or prompt == '' then
+                    return nil
+                end
+
+                return flatten({ args, '--', prompt, search_list })
+            end, opts.entry_maker or make_entry.gen_from_vimgrep(opts), opts.max_results, opts.cwd)
+
+            local pickers = require('telescope.pickers')
+            local sorters = require('telescope.sorters')
+            pickers.new(opts, {
+                prompt_title = 'Live Grep',
+                finder = live_grepper,
+                previewer = conf.grep_previewer(opts),
+                -- TODO: it would be cool to use `--json` output for this
+                -- and then we could get the highlight positions directly
+                sorter = sorters.highlighter_only(opts),
+                attach_mappings = function(_, map)
+                    map('i', '<c-space>', ts_actions().to_fuzzy_refine)
+                    return true
+                end,
+                push_cursor_on_edit = true,
+            })
+            :find()
         end
 
         return {
             {
                 '<leader>/',
-                function()
-                    current_buffer_fuzzy_find()
-                end,
+                current_buffer_fuzzy_find,
                 desc = 'Fuzzy find in current buffer'
             },
             {
                 '<leader>:',
-                '<cmd>Telescope command_history<cr>',
+                function()
+                    ts_builtin().command_history()
+                end,
                 desc = 'Command History'
+            },
+            {
+                '<leader>"',
+                function()
+                    ts_builtin().registers()
+                end,
+                desc = 'Registers'
             },
 
             -- buffers
             {
                 '<leader>,',
-                function()
-                    ts_buffers_cmd()
-                end,
+                ts_buffers_cmd,
                 desc = 'Open Buffers'
             },
             {
                 '<leader>bb',
-                function()
-                    ts_buffers_cmd()
-                end,
+                ts_buffers_cmd,
                 desc = 'Open Buffers'
             },
             {
                 '<leader>fb',
-                function()
-                    ts_buffers_cmd()
-                end,
+                ts_buffers_cmd,
                 desc = 'Open Buffers'
             },
 
@@ -97,28 +233,60 @@ return {
             },
             {
                 '<leader>fa',
-                '<cmd>Telescope autocommands<cr>',
+                function()
+                    ts_builtin().autocommands()
+                end,
                 desc = 'Auto Commands'
             },
             {
                 '<leader>fc',
-                '<cmd>Telescope commands<cr>',
+                function()
+                    ts_builtin().commands()
+                end,
                 desc = 'Commands'
             },
             {
                 '<leader>fC',
-                '<cmd>Telescope colorscheme initial_mode=normal<cr>',
+                function()
+                    ts_builtin().colorscheme({ initial_mode = 'normal' })
+                end,
                 desc = 'Colorschemes with Preview'
             },
             {
                 '<leader>fd',
-                '<cmd>Telescope diagnostics bufnr=0<cr>',
+                function()
+                    ts_builtin().diagnostics({ bufnr = 0 })
+                end,
                 desc = 'Diagnostics - Document'
             },
             {
                 '<leader>fD',
-                '<cmd>Telescope diagnostics<cr>',
+                function()
+                    ts_builtin().diagnostics()
+                end,
                 desc = 'Diagnostics - Workspace'
+            },
+            {
+                '<leader>ff',
+                function()
+                    local path = vim.custom_fn.trim_oil_path(vim.custom_fn.get_nvim_cwd())
+                    ts_builtin().find_files({
+                        cwd = path,
+                        prompt_title = 'Files in' .. path,
+                    })
+                end,
+                desc = 'Files (nvim root dir)'
+            },
+            {
+                '<leader>fF',
+                function()
+                    local path = vim.custom_fn.trim_oil_path(vim.custom_fn.get_buf_cwd())
+                    ts_builtin().find_files({
+                        cwd = path,
+                        prompt_title = 'Files in' .. path,
+                    })
+                end,
+                desc = 'Files (cwd)'
             },
             {
                 '<leader>fh',
@@ -134,89 +302,93 @@ return {
             },
             {
                 '<leader>fH',
-                '<cmd>Telescope highlights<cr>',
+                function()
+                    ts_builtin().highlights()
+                end,
                 desc = 'Highlight Groups'
             },
             {
-                '<leader>ff',
+                '<leader>fj',
                 function()
-                    local path = get_cwd()
-                    ts_builtin().find_files({
-                        cwd = path,
-                        prompt_title = 'Files in' .. path,
-                    })
+                    ts_builtin().jumplist({ initial_mode = 'normal' })
                 end,
-                desc = 'Files (cwd)'
-            },
-            {
-                '<leader>fF',
-                function()
-                    local path = get_nvim_root_dir()
-                    ts_builtin().find_files({
-                        cwd = path,
-                        prompt_title = 'Files in' .. path,
-                    })
-                end,
-                desc = 'Files (nvim root dir)'
+                desc = 'Jumplist'
             },
             {
                 '<leader>fk',
-                '<cmd>Telescope keymaps<cr>',
+                function()
+                    ts_builtin().keymaps()
+                end,
                 desc = 'Keymaps'
+            },
+            {
+                '<leader>fl',
+                function()
+                    ts_builtin().loclist({ initial_mode = 'normal' })
+                end,
+                desc = 'Location List'
+            },
+            {
+                '<leader>fm',
+                function()
+                    ts_builtin().man_pages()
+                end,
+                desc = 'Man Pages'
             },
             {
                 '<leader>fn',
                 function()
-                    local path = vim.fn.stdpath('config')
                     ts_builtin().find_files({
-                        cwd = path,
-                        prompt_title = 'Files in' .. path,
+                        cwd = nvim_config_dir,
+                        prompt_title = 'Files in' .. nvim_config_dir,
                     })
                 end,
-                desc = 'Neovim Config Files (Find)'
+                desc = 'Neovim Config Files'
+            },
+            {
+                '<leader>fp',
+                function()
+                    ts_builtin().find_files({
+                        cwd = plugins_dir,
+                        prompt_title = 'Plugin Files in' .. plugins_dir,
+                    })
+                end,
+                desc = 'Plugin Files'
+            },
+            {
+                '<leader>fq',
+                function()
+                    ts_builtin().quickfix({ initial_mode = 'normal' })
+                end,
+                desc = 'Quickfix List'
             },
             {
                 '<leader>fr',
-                '<cmd>Telescope resume initial_mode=normal<cr>',
-                desc = 'Telescope Resume'
+                function()
+                    ts_resume_cmd()
+                end,
+                desc = 'Resume (Telescope)'
             },
             {
                 '<leader>ft',
-                '<cmd>Telescope builtin<cr>',
+                function()
+                    ts_builtin().builtin()
+                end,
                 desc = 'Telescope Functions'
+            },
+            {
+                '<leader>fv',
+                function()
+                    ts_builtin().vim_options()
+                end,
+                desc = 'Vim Options'
             },
 
             -- search
             {
-                '<leader>s"',
-                '<cmd>Telescope registers<cr>',
-                desc = 'Registers'
-            },
-            {
-                '<leader>sd',
-                '<cmd>Telescope diagnostics bufnr=0<cr>',
-                desc = 'Diagnostics - Document'
-            },
-            {
-                '<leader>sD',
-                '<cmd>Telescope diagnostics<cr>',
-                desc = 'Diagnostics - Workspace'
-            },
-            {
                 '<leader>sf',
                 function()
-                    local path = get_cwd()
-                    ts_builtin().live_grep({
-                        cwd = path,
-                        prompt_title = 'Grep in' .. path,
-                    })
-                end,
-                desc = 'Grep (cwd)'
-            },
-            {
-                '<leader>sF',
-                function()
-                    local path = get_nvim_root_dir()
+                    local path = vim.custom_fn.trim_oil_path(vim.custom_fn.get_nvim_cwd())
                     ts_builtin().live_grep({
                         cwd = path,
                         prompt_title = 'Grep in' .. path,
@@ -225,27 +397,35 @@ return {
                 desc = 'Grep (nvim root dir)'
             },
             {
-                '<leader>sj',
-                '<cmd>Telescope jumplist<cr>',
-                desc = 'Jumplist'
+                '<leader>sF',
+                function()
+                    local path = vim.custom_fn.trim_oil_path(vim.custom_fn.get_buf_cwd())
+                    ts_builtin().live_grep({
+                        cwd = path,
+                        prompt_title = 'Grep in' .. path,
+                    })
+                end,
+                desc = 'Grep (cwd)'
             },
             {
-                '<leader>sl',
-                '<cmd>Telescope loclist<cr>',
-                desc = 'Location List'
-            },
-            {
-                '<leader>sm',
-                '<cmd>Telescope man_pages<cr>',
-                desc = 'Man Pages'
+                '<leader>sh',
+                function()
+                    grep_help({
+                        attach_mappings = function(_, map)
+                            map({'i','n'}, '<CR>', ts_actions().select_tab)
+                            return true
+                        end,
+                        prompt_title = 'Grep in Help Docs'
+                    })
+                end,
+                desc = 'Help Docs (Grep)'
             },
             {
                 '<leader>sn',
                 function()
-                    local path = vim.fn.stdpath('config')
                     ts_builtin().live_grep({
-                        cwd = path,
-                        prompt_title = 'Grep in' .. path,
+                        cwd = nvim_config_dir,
+                        prompt_title = 'Grep in' .. nvim_config_dir,
                     })
                 end,
                 desc = 'Neovim Config Files (Grep)'
@@ -259,49 +439,50 @@ return {
 
                     })
                 end,
-                desc = 'Grep in Open Files'
+                desc = 'Open Files (Grep)'
             },
             {
-                '<leader>sq',
-                '<cmd>Telescope quickfix<cr>',
-                desc = 'Quickfix List'
+                '<leader>sp',
+                function()
+                    ts_builtin().live_grep({
+                        cwd = plugins_dir,
+                        prompt_title = 'Grep in Plugin Files',
+
+                    })
+                end,
+                desc = 'Plugin Files (Grep)'
             },
             {
                 '<leader>sr',
-                '<cmd>Telescope resume initial_mode=normal<cr>',
+                ts_resume_cmd,
                 desc = 'Telescope Resume'
-            },
-            {
-                '<leader>sv',
-                '<cmd>Telescope vim_options<cr>',
-                desc = 'Vim Options'
             },
             {
                 '<leader>sw',
                 function()
-                    local path = get_cwd()
+                    local path = vim.custom_fn.trim_oil_path(vim.custom_fn.get_nvim_cwd())
                     ts_builtin().live_grep({
                         cwd = path,
-                        prompt_title = 'Grep in' .. path,
-                        word_match = '-w',
-                        initial_mode = 'normal'
-                    })
-                end,
-                desc = 'Grep current Word (cwd)',
-                mode = {'n', 'v'}
-            },
-            {
-                '<leader>sW',
-                function()
-                    local path = get_nvim_root_dir()
-                    ts_builtin().live_grep({
-                        cwd = path,
-                        prompt_title = 'Grep in' .. path,
+                        prompt_title = 'Grep (current word) in' .. path,
                         word_match = '-w',
                         initial_mode = 'normal'
                     })
                 end,
                 desc = 'Grep current Word (nvim root dir)',
+                mode = {'n', 'v'}
+            },
+            {
+                '<leader>sW',
+                function()
+                    local path = vim.custom_fn.trim_oil_path(vim.custom_fn.get_buf_cwd())
+                    ts_builtin().live_grep({
+                        cwd = path,
+                        prompt_title = 'Grep (current word) in' .. path,
+                        word_match = '-w',
+                        initial_mode = 'normal'
+                    })
+                end,
+                desc = 'Grep current Word (cwd)',
                 mode = {'n', 'v'}
             },
         }
@@ -332,6 +513,11 @@ return {
                         ['<Down>'] = actions.preview_scrolling_down,
                     },
                 },
+                layout_config = {
+                    cursor = { width = 0.9 },
+                    horizontal = { width = 0.9 },
+                    vertical = { width = 0.9 },
+                }
             },
             pickers = {
                 colorscheme = {

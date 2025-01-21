@@ -1,22 +1,24 @@
-rainbow_highlights = {
-    'RainbowDelimiterRed',
-    'RainbowDelimiterBlue',
-    'RainbowDelimiterYellow',
-    'RainbowDelimiterViolet',
-    'RainbowDelimiterGreen',
-    'RainbowDelimiterCyan',
-    'RainbowDelimiterOrange',
-}
-
 return {
     'HiPhish/rainbow-delimiters.nvim',
     dependencies = { 'nvim-treesitter/nvim-treesitter' },
-    event = { 'BufReadPre', 'BufNewFile' },
-    config = function()
-        require('rainbow-delimiters.setup').setup({
-            highlight = rainbow_highlights
-        })
-    end
+    event = { 'LazyFileOpen', 'LazyOilPreview', 'BufNewFile' },
+    main = 'rainbow-delimiters.setup',
+    init = function()
+        vim.g.rainbow_delimiters = {
+            highlight = {
+                'RainbowDelimiterRed',
+                'RainbowDelimiterBlue',
+                'RainbowDelimiterYellow',
+                'RainbowDelimiterViolet',
+                'RainbowDelimiterGreen',
+                'RainbowDelimiterCyan',
+                'RainbowDelimiterOrange',
+            }
+        }
+    end,
+    opts = function()
+        return { highlight = vim.g.rainbow_delimiters.highlight }
+    end,
 }
 
 -- default order:

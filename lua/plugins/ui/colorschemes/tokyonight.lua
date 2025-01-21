@@ -1,7 +1,7 @@
 return {
     'folke/tokyonight.nvim',
-    lazy = false,
-    priority = 1000, -- load before all other plugins
+    lazy = true,
+    priority = 800,
     config = function()
         require('tokyonight').setup({
             style = 'night',
@@ -18,7 +18,10 @@ return {
                 c.blue1 = '#00eaff'
                 c.cyan = '#00eaff'
                 c.teal = '#1dbf97'
+
                 c.comment = '#787fa1'
+                c.bg_dark = '#12121a'
+                c.bg = '#171826'
             end,
 
             on_highlights = function(hi, c)
@@ -29,8 +32,9 @@ return {
                 hi.LineNr = { fg = '#84899c' }
                 hi.LineNrAbove = { fg = '#84899c' }
                 hi.LineNrBelow = { fg = '#84899c' }
+
                 -- cursor line num color
-                hi.CursorLineNr = { fg = '#00ff00' }
+                hi.CursorLineNr = { fg = '#00ff00', bold = true }
                 -- cursor line background color
                 hi.CursorLine = { fg = '#2e3142' }
 
@@ -41,10 +45,10 @@ return {
                 hi.TelescopePromptBorder = { fg = c.green, bg = c.bg_float }
                 hi.TelescopePromptTitle = { fg = c.green, bg = c.bg_float }
 
-                hi.SpecialKey = { fg = c.comment }
+                -- hi.SpecialKey = { fg = c.comment }
             end,
         })
 
-        -- vim.cmd.colorscheme('tokyonight-night')
+        vim.cmd.colorscheme('tokyonight-night')
     end,
 }

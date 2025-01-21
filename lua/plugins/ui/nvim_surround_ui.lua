@@ -1,10 +1,11 @@
 return {
     'roobert/surround-ui.nvim',
+    lazy = true,
     dependencies = {
         'kylechui/nvim-surround',
         'folke/which-key.nvim',
     },
-    event = { 'BufReadPre', 'BufNewFile' },
+    event = { 'LazyFileOpen', 'BufNewFile' },
     -- config = function()
     --     require('surround-ui').setup({
     --         root_key = 'S'

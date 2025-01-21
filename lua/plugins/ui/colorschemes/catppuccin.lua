@@ -1,16 +1,13 @@
 return {
     'catppuccin/nvim',
     name = 'catppuccin',
-    keys = {
-        {
-            '<leader>fC',
-            '<cmd>Telescope colorscheme initial_mode=normal<cr>',
-            desc = 'Colorschemes with Preview'
-        },
-    },
     lazy = true,
-    -- priority = 1000,
-    opts = {
-        transparent_background = false,
-    }
+    priority = 800,
+    config = function()
+        require('catppuccin').setup({
+            transparent_background = false,
+        })
+
+        vim.cmd.colorscheme('catppuccin')
+    end
 }

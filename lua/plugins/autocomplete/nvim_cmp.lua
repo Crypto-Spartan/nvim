@@ -1,13 +1,13 @@
 return {
     'hrsh7th/nvim-cmp',
-    event = { 'InsertEnter' },
+    event = { 'LazyFileInsert', 'LazyOilInsert' },
     dependencies = {
-        'L3MON4D3/LuaSnip',
-        'saadparwaiz1/cmp_luasnip',
-        'rafamadriz/friendly-snippets',
-        'hrsh7th/cmp-nvim-lsp',
-        'hrsh7th/cmp-buffer',
-        'hrsh7th/cmp-path',
+        'L3MON4D3/LuaSnip',                -- snippet engine
+        'saadparwaiz1/cmp_luasnip',        -- autocompletion
+        'rafamadriz/friendly-snippets',    -- useful snippets
+        'hrsh7th/cmp-nvim-lsp',            -- source for LSP
+        'hrsh7th/cmp-buffer',              -- source for text in buffer
+        'hrsh7th/cmp-path',                -- source for file system paths
     },
     config = function()
         local cmp = require('cmp')
@@ -26,6 +26,8 @@ return {
                 end,
             },
             mapping = cmp.mapping.preset.insert({
+                ['<C-n>']     = cmp.mapping.select_next_item(),
+                ['<C-p>']     = cmp.mapping.select_prev_item(),
                 ['<C-k>']     = cmp.mapping.select_prev_item(),
                 ['<C-j>']     = cmp.mapping.select_next_item(),
                 ['<C-u>']     = cmp.mapping.scroll_docs(-4),
@@ -35,10 +37,15 @@ return {
                 ['<CR>']      = cmp.mapping.confirm({ select = false }),
             }),
             sources = cmp.config.sources({
+                {
+                    name = 'lazydev',
+                    -- set the group index to 0 to skip loading LuaLS completions as lazydev recommends it
+                    group_index = 0,
+                },
                 { name = 'nvim_lsp' },
+                { name = 'luasnip' },
                 { name = 'buffer' },
                 { name = 'path' },
-                { name = 'luasnip' },
             })
         })
     end,

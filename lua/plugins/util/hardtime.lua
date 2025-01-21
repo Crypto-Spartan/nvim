@@ -1,7 +1,10 @@
 return {
     'm4xshen/hardtime.nvim',
-    dependencies = { 'MunifTanjim/nui.nvim', 'nvim-lua/plenary.nvim' },
-    event = { 'BufReadPre', 'BufNewFile' },
+    dependencies = {
+        'MunifTanjim/nui.nvim',
+        'nvim-lua/plenary.nvim'
+    },
+    event = { 'LazyFileOpen', 'BufNewFile' },
     opts = {
         max_count = 3,
         restriction_mode = 'hint',

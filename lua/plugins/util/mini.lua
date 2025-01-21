@@ -8,9 +8,12 @@ return {
         require('mini.cursorword').setup()
         -- require('mini.diff').setup()
         -- require('mini.hipatterns').setup()
-        require('mini.icons').setup({
-            style = 'ascii',
-        })
+        if not vim.g.have_nerd_font then
+            require('mini.icons').setup({
+                style = 'ascii',
+            })
+        end
+
         require('mini.move').setup({
             mappings = {
                 -- visual mode, alt+shift+<hl>
@@ -22,7 +25,9 @@ return {
             }
         })
         require('mini.statusline').setup({
-            use_icons = false,
+            use_icons = vim.g.have_nerd_font
         })
+
+        require('mini.trailspace').setup()
     end
 }

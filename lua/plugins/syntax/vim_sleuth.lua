@@ -1,4 +1,5 @@
 return {
     'tpope/vim-sleuth',
-    event = { 'BufReadPre', 'BufNewFile' },
+    enabled = false,
+    event = { 'LazyFileOpen', 'BufNewFile' },
 }

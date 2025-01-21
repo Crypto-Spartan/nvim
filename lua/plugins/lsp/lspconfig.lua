@@ -1,16 +1,19 @@
 return {
     -- Main LSP Configuration
     'neovim/nvim-lspconfig',
-    event = { 'BufReadPre', 'BufNewFile' },
+    event = { 'LazyFileOpen', 'BufNewFile' },
     dependencies = {
         -- Automatically install LSPs and related tools to stdpath for Neovim
-        { 'williamboman/mason.nvim', config = true }, -- NOTE: Must be loaded before dependants
+        'williamboman/mason.nvim', -- NOTE: Must be loaded before dependants
         'williamboman/mason-lspconfig.nvim',
         'WhoIsSethDaniel/mason-tool-installer.nvim',
 
+        -- navigation that hooks into the LSP
+        'SmiteshP/nvim-navbuddy',
+
         -- Useful status updates for LSP.
         -- NOTE: `opts = {}` is the same as calling `require('fidget').setup({})`
-        { 'j-hui/fidget.nvim', opts = {} },
+        'j-hui/fidget.nvim',
 
         -- Allows extra capabilities provided by nvim-cmp
         'hrsh7th/cmp-nvim-lsp',
@@ -73,7 +76,7 @@ return {
                 -- or a suggestion from your LSP for this to activate.
                 map('<leader>la', vim.lsp.buf.code_action, 'Action', {'n','x'})
 
-                map('<leader>lR', '<cmd>LspRestart<cr>', 'Restart')
+                map('<leader>lR', vim.cmd.LspRestart, 'Restart')
 
                 -- The following two autocommands are used to highlight references of the
                 -- word under your cursor when your cursor rests there for a little while.
@@ -112,6 +115,21 @@ return {
                     map('<leader>th', function()
                         vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
                     end, 'Toggle Hints')
+                    vim.lsp.inlay_hint.enable(true)
+                    local toggle_opts = {
+                        name = 'Hints (LSP)',
+                        get = function()
+                            return vim.lsp.inlay_hint.is_enabled({ bufnr = event.buf })
+                        end,
+                        set = function(state)
+                            if state then
+                                vim.lsp.inlay_hint.enable(true)
+                            else
+                                vim.lsp.inlay_hint.enable(false)
+                            end
+                        end,
+                    }
+                    package.loaded.snacks.toggle.new(toggle_opts):map('<leader>th')
                 end
             end,
         })
@@ -152,24 +170,36 @@ return {
                 -- capabilities = {},
                 settings = {
                     Lua = {
-                        completion = {
-                            callSnippet = 'Replace',
-                        },
-                        -- You can toggle below to ignore Lua_LS's noisy `missing-fields` warnings
+                        runtime = { version = 'LuaJIT' },
+                        completion = { callSnippet = 'Replace' },
                         diagnostics = {
-                            -- disable = { 'missing-fields' },
+                            -- disable = { 'missing-fields' }, -- ignore Lua_LS's noisy `missing-fields` warnings
                             globals = { 'vim' }, -- make the LSP recognize 'vim' global
                         },
                         workspace = {
                             -- make LSP aware of runtime files
                             library = {
-                                [vim.fn.expand('$VIMRUNTIME/lua')] = true,
-                                [vim.fn.stdpath('config') .. '/lua'] = true,
+                                vim.fn.expand('$VIMRUNTIME/lua'),
+                                vim.fn.stdpath('config') .. '/lua',
+                                '${3rd}/luv/library',
                             },
                         },
                     },
                 },
             },
+            -- gopls = {
+            --     settings = {
+            --         hints = {
+            --             assignVariableTypes = true,
+            --             compositeLiteralFields = true,
+            --             compositeLiteralTypes = true,
+            --             constantValues = true,
+            --             functionTypeParameters = true,
+            --             parameterNames = true,
+            --             rangeVariableTypes = true,
+            --         },
+            --     },
+            -- },
         }
 
         -- Ensure the servers and tools above are installed
@@ -184,12 +214,14 @@ return {
         -- for you, so that they are available from within Neovim.
         local ensure_installed = vim.tbl_keys(servers or {})
         vim.list_extend(ensure_installed, {
-            'stylua', -- Used to format Lua code
-            'rust-analyzer',
+            -- 'gopls',
+            -- 'goimports',
+            'lua_ls',
+            -- 'stylua', -- Used to format Lua code
         })
-        require('mason-tool-installer').setup { ensure_installed = ensure_installed }
+        require('mason-tool-installer').setup({ ensure_installed = ensure_installed })
 
-        require('mason-lspconfig').setup {
+        require('mason-lspconfig').setup({
             handlers = {
                 function(server_name)
                     local server = servers[server_name] or {}
@@ -200,6 +232,6 @@ return {
                     require('lspconfig')[server_name].setup(server)
                 end,
             },
-        }
+        })
     end,
 }
