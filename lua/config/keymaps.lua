@@ -65,7 +65,7 @@ local function change_nvim_dir_to_current_file()
     local current_file_dir = vim.custom_fn.trim_oil_path(vim.custom_fn.get_buf_cwd())
     vim.api.nvim_set_current_dir(current_file_dir)
 end
-nnoremap('<leader>cd', change_nvim_dir_to_current_file, { desc = 'Change nvim cwd to current buffer directory' })
+nnoremap('<leader>z', change_nvim_dir_to_current_file, { desc = 'Change nvim cwd to current buffer directory' })
 
 
 --[[ *MISC KEYMAPS* ]]--
