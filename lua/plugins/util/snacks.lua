@@ -35,7 +35,7 @@ return {
         quickfile    = { enabled = false },
         rename       = { enabled = false },
         scope        = { enabled = false },
-        scratch      = { enabled = false },
+        scratch      = { enabled = true },
         scroll       = { enabled = true },
         statuscolumn = { enabled = true },
         terminal     = { enabled = true },
