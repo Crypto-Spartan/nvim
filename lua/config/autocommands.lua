@@ -11,6 +11,14 @@ vim.api.nvim_create_autocmd('TextYankPost', {
     end
 })
 
+vim.api.nvim_create_autocmd({ 'BufReadPost', 'BufWritePre' }, {
+    group = vim.api.nvim_create_augroup('SetFileformat', { clear = true }),
+    desc = 'Always set fileformat to unix',
+    callback = function()
+        vim.bo.fileformat = 'unix'
+    end
+})
+
 -- autoreload files when modified externally
 vim.o.autoread = true
 local autoreload_files_augroup = vim.api.nvim_create_augroup('AutoreloadFiles', { clear = true })
