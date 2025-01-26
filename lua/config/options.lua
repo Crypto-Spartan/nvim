@@ -49,6 +49,8 @@ end
 
 vim.filetype.add({
     filename = {
-        ['.bashrc_zellij'] = 'sh',
+        ['.bashrc_zellij']        = 'sh',
+        ['.gitattributes_global'] = '.gitattributes',
+        ['.gitconfig_global']     = '.gitconfig',
     }
 })
